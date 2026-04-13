@@ -74,20 +74,20 @@ The plugin loads at startup. Restart opencode to activate.
 
 ## Verification
 
-After restart, the sidebar should show a collapsible "▼ Tokscale" section near the top with three time period rows:
+After restart, the sidebar should show a "Tokscale" section near the top with three time period rows:
 
 ```
-▼ Tokscale
-  Today          1.2M    $3.45
-  This Week      5.6M   $12.34
-  This Month    12.3M   $45.67
+Tokscale
+Today        1.2M    $3.45
+This Week    5.6M   $12.34
+This Month  12.3M   $45.67
 ```
 
 If tokscale is not installed, you will see:
 
 ```
-▼ Tokscale
-  Install: npm i -g @tokscale/cli
+Tokscale
+Install: npm i -g @tokscale/cli
 ```
 
 If there is no usage data yet, values show as `—`.

@@ -1,0 +1,49 @@
+{
+  "name": "opencode-tokscale",
+  "version": "0.0.1-rc.0",
+  "type": "module",
+  "description": "OpenCode TUI sidebar plugin displaying tokscale token usage statistics and costs",
+  "exports": {
+    "./tui": "./src/tui.tsx"
+  },
+  "files": [
+    "src/tui.tsx",
+    "src/tokscale.ts",
+    "src/types.ts",
+    "src/format.ts"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "tui-plugin",
+    "tokscale",
+    "token-usage"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stevejkang/opencode-tokscale.git"
+  },
+  "author": "stevejkang",
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode-ai/plugin": "^1.4.3"
+  },
+  "peerDependenciesMeta": {
+    "@opentui/core": {
+      "optional": true
+    },
+    "@opentui/solid": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@opentui/core": "^0.1.98",
+    "@opentui/solid": "^0.1.98",
+    "solid-js": "^1.9.12",
+    "vitest": "4.1.4"
+  }
+}

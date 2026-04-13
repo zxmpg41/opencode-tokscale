@@ -1,0 +1,7 @@
+node_modules/
+.sisyphus/
+*.log
+dist/
+HISTORY.md
+AGENTS.md
+TODO.md

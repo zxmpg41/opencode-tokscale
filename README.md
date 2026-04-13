@@ -11,6 +11,13 @@ This Month  12.3M   $45.67
 
 ## Install
 
+Paste this into your LLM agent (Claude Code, opencode, Cursor, etc.):
+
+```
+Install and configure opencode-tokscale by following the instructions here:
+https://raw.githubusercontent.com/stevejkang/opencode-tokscale/refs/heads/main/docs/installation.md
+```
+
 ### Prerequisites
 
 [tokscale](https://github.com/junhoyeo/tokscale) must be installed:

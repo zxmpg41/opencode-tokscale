@@ -68,7 +68,7 @@ const tui: TuiPlugin = async (api, options, _meta) => {
         const fgColor = customLabelColor ?? t.text ?? "#EEFFFF"
 
         return (
-          <box flexDirection="column" marginBottom={1}>
+          <box flexDirection="column">
             <box height={1}>
               <text fg={tokenColor}><b>{"Tokscale"}</b></text>
             </box>

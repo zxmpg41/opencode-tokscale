@@ -61,19 +61,19 @@ opencode resolves the npm package on startup automatically.
 | Option | Default | Description |
 |---|---|---|
 | `refreshInterval` | `60` | Seconds between data refreshes |
-| `showOpenCodeOnly` | `true` | Show only opencode usage (`--opencode` flag). Set `false` for all clients |
+| `showOpenCodeOnly` | `true` | Show only opencode usage. Set `false` for all clients. Automatically uses `-c opencode` on tokscale v4+ or `--opencode` on v3 |
 | `tokenColor` | `#0073FF` | Color of the "Tokscale" title and token count values |
 | `costColor` | theme muted | Color of cost values (e.g., `$0.00`) and placeholder states (`...`, `err`, `—`) |
 | `labelColor` | theme primary | Color of time period labels (e.g., "Today", "This Week") |
 
 ## How It Works
 
-Shells out to `tokscale models --json` with `--today`, `--week`, and `--month` flags. Parses the JSON. Renders totals in the sidebar.
+Shells out to `tokscale models --json` with `--today`, `--week`, and `--month` flags. Parses the JSON. Renders totals in the sidebar. Detects the installed tokscale version at startup and uses the matching client filter flag (`-c opencode` on v4+, `--opencode` on v3).
 
 ```
-setInterval(60s) → tokscale models --json --today --opencode --no-spinner → parse → render
-                 → tokscale models --json --week  --opencode --no-spinner → parse → render
-                 → tokscale models --json --month --opencode --no-spinner → parse → render
+setInterval(60s) → tokscale models --json --today -c opencode --no-spinner → parse → render
+                 → tokscale models --json --week  -c opencode --no-spinner → parse → render
+                 → tokscale models --json --month -c opencode --no-spinner → parse → render
 ```
 
 Three parallel CLI calls per refresh. tokscale processes in ~175ms thanks to its Rust core, so the sidebar stays snappy.

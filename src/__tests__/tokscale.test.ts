@@ -20,7 +20,16 @@ vi.mock("child_process", () => ({
 }))
 
 import { execFile } from "child_process"
-import { detectTokscale, fetchPeriodStats, parseModelReport, reportToStats, resetDetectionCache } from "../tokscale"
+import {
+  detectTokscale,
+  fetchPeriodStats,
+  getVersion,
+  parseModelReport,
+  parseVersion,
+  versionAtLeast,
+  reportToStats,
+  resetDetectionCache,
+} from "../tokscale"
 
 const mockExecFile = vi.mocked(execFile)
 
@@ -40,22 +49,104 @@ function mockExecFileError(error: Error & { code?: number }) {
   })
 }
 
+/**
+ * Mock detectTokscale's two-step sequence:
+ * 1st call: `which tokscale` → success
+ * 2nd call: `tokscale --version` → returns versionStdout
+ */
+function mockDetectSequence(versionStdout: string) {
+  let callCount = 0
+  mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+    callCount++
+    const callback = typeof _opts === "function" ? _opts : cb
+    if (callCount === 1) {
+      // which tokscale → success
+      ;(callback as Function)(null, "/usr/local/bin/tokscale", "")
+    } else if (callCount === 2) {
+      // tokscale --version → return version
+      ;(callback as Function)(null, versionStdout, "")
+    }
+    return {} as ReturnType<typeof execFile>
+  })
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   resetDetectionCache()
 })
 
+describe("parseVersion", () => {
+  it("parses 'tokscale 4.0.5' → [4, 0, 5]", () => {
+    expect(parseVersion("tokscale 4.0.5")).toEqual([4, 0, 5])
+  })
+
+  it("parses '3.1.3' → [3, 1, 3]", () => {
+    expect(parseVersion("3.1.3")).toEqual([3, 1, 3])
+  })
+
+  it("parses '4.0.0\\n' with trailing newline → [4, 0, 0]", () => {
+    expect(parseVersion("4.0.0\n")).toEqual([4, 0, 0])
+  })
+
+  it("returns null for empty string", () => {
+    expect(parseVersion("")).toBeNull()
+  })
+
+  it("returns null for garbage", () => {
+    expect(parseVersion("not a version")).toBeNull()
+  })
+})
+
+describe("versionAtLeast", () => {
+  it("returns true when equal", () => {
+    expect(versionAtLeast([4, 0, 0], [4, 0, 0])).toBe(true)
+  })
+
+  it("returns true when major is greater", () => {
+    expect(versionAtLeast([5, 0, 0], [4, 0, 0])).toBe(true)
+  })
+
+  it("returns true when minor is greater", () => {
+    expect(versionAtLeast([4, 1, 0], [4, 0, 0])).toBe(true)
+  })
+
+  it("returns true when patch is greater", () => {
+    expect(versionAtLeast([4, 0, 5], [4, 0, 0])).toBe(true)
+  })
+
+  it("returns false when below", () => {
+    expect(versionAtLeast([3, 1, 3], [4, 0, 0])).toBe(false)
+  })
+})
+
 describe("detectTokscale", () => {
-  it("returns true when which tokscale succeeds", async () => {
-    mockExecFileSuccess("/usr/local/bin/tokscale")
+  it("returns true and caches major version when tokscale is found", async () => {
+    mockDetectSequence("tokscale 4.0.5")
     const result = await detectTokscale()
     expect(result).toBe(true)
-    expect(mockExecFile).toHaveBeenCalledWith(
+    expect(getVersion()).toEqual([4, 0, 5])
+    expect(mockExecFile).toHaveBeenCalledTimes(2)
+    expect(mockExecFile).toHaveBeenNthCalledWith(
+      1,
       "which",
       ["tokscale"],
       expect.objectContaining({ timeout: 5000 }),
       expect.any(Function),
     )
+    expect(mockExecFile).toHaveBeenNthCalledWith(
+      2,
+      "tokscale",
+      ["--version"],
+      expect.objectContaining({ timeout: 5000 }),
+      expect.any(Function),
+    )
+  })
+
+  it("returns true with v3 version cached", async () => {
+    mockDetectSequence("tokscale 3.1.3")
+    const result = await detectTokscale()
+    expect(result).toBe(true)
+    expect(getVersion()).toEqual([3, 1, 3])
   })
 
   it("returns false when which tokscale fails with exit code 1", async () => {
@@ -63,6 +154,7 @@ describe("detectTokscale", () => {
     mockExecFileError(error)
     const result = await detectTokscale()
     expect(result).toBe(false)
+    expect(getVersion()).toBeNull()
   })
 
   it("returns false when which tokscale times out", async () => {
@@ -70,6 +162,23 @@ describe("detectTokscale", () => {
     mockExecFileError(error)
     const result = await detectTokscale()
     expect(result).toBe(false)
+  })
+
+  it("returns true with null version when --version fails", async () => {
+    let callCount = 0
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+      callCount++
+      const callback = typeof _opts === "function" ? _opts : cb
+      if (callCount === 1) {
+        ;(callback as Function)(null, "/usr/local/bin/tokscale", "")
+      } else {
+        ;(callback as Function)(new Error("version failed"), "", "")
+      }
+      return {} as ReturnType<typeof execFile>
+    })
+    const result = await detectTokscale()
+    expect(result).toBe(true)
+    expect(getVersion()).toBeNull()
   })
 })
 
@@ -83,7 +192,12 @@ describe("fetchPeriodStats", () => {
     expect(stats.fetchedAt).toBeTypeOf("number")
   })
 
-  it("passes correct CLI args for today with openCodeOnly=true (default)", async () => {
+  it("uses -c opencode on v4+", async () => {
+    // Prime the version cache with v4
+    mockDetectSequence("tokscale 4.0.5")
+    await detectTokscale()
+    vi.clearAllMocks()
+
     mockExecFileSuccess(validReportJson)
     await fetchPeriodStats("today")
     expect(mockExecFile).toHaveBeenCalledWith(
@@ -94,7 +208,35 @@ describe("fetchPeriodStats", () => {
     )
   })
 
-  it("passes CLI args without --opencode when openCodeOnly=false", async () => {
+  it("uses --opencode on v3", async () => {
+    // Prime the version cache with v3
+    mockDetectSequence("tokscale 3.1.3")
+    await detectTokscale()
+    vi.clearAllMocks()
+
+    mockExecFileSuccess(validReportJson)
+    await fetchPeriodStats("today")
+    expect(mockExecFile).toHaveBeenCalledWith(
+      "tokscale",
+      ["models", "--json", "--today", "--no-spinner", "--opencode"],
+      expect.objectContaining({ timeout: 15000, maxBuffer: 1024 * 1024 }),
+      expect.any(Function),
+    )
+  })
+
+  it("falls back to --opencode when version is unknown", async () => {
+    // No detectTokscale() called → version is null
+    mockExecFileSuccess(validReportJson)
+    await fetchPeriodStats("today")
+    expect(mockExecFile).toHaveBeenCalledWith(
+      "tokscale",
+      ["models", "--json", "--today", "--no-spinner", "--opencode"],
+      expect.objectContaining({ timeout: 15000 }),
+      expect.any(Function),
+    )
+  })
+
+  it("passes CLI args without client filter when openCodeOnly=false", async () => {
     mockExecFileSuccess(validReportJson)
     await fetchPeriodStats("today", { openCodeOnly: false })
     expect(mockExecFile).toHaveBeenCalledWith(

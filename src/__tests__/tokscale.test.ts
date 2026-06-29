@@ -88,7 +88,7 @@ describe("fetchPeriodStats", () => {
     await fetchPeriodStats("today")
     expect(mockExecFile).toHaveBeenCalledWith(
       "tokscale",
-      ["models", "--json", "--today", "--no-spinner", "--opencode"],
+      ["models", "--json", "--today", "--no-spinner", "-c", "opencode"],
       expect.objectContaining({ timeout: 15000, maxBuffer: 1024 * 1024 }),
       expect.any(Function),
     )

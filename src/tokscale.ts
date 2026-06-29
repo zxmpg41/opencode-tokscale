@@ -24,7 +24,7 @@ export function fetchPeriodStats(
   options?: { openCodeOnly?: boolean },
 ): Promise<PeriodStats> {
   const args = ["models", "--json", PERIOD_FLAGS[period], "--no-spinner"]
-  if (options?.openCodeOnly !== false) args.push("--opencode")
+  if (options?.openCodeOnly !== false) args.push("-c", "opencode")
 
   return new Promise((resolve, reject) => {
     execFile(

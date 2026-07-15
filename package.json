@@ -1,6 +1,6 @@
 {
-  "name": "opencode-tokscale",
-  "version": "0.1.0",
+  "name": "@zxmpg41/opencode-tokscale",
+  "version": "0.1.1",
   "type": "module",
   "description": "OpenCode TUI sidebar plugin displaying tokscale token usage statistics and costs",
   "exports": {
@@ -25,7 +25,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/stevejkang/opencode-tokscale.git"
+    "url": "git+https://github.com/zxmpg41/opencode-tokscale.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   },
   "author": "stevejkang",
   "license": "MIT",

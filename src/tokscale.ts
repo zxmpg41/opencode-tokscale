@@ -34,17 +34,15 @@ export function detectTokscale(): Promise<boolean> {
   if (cachedDetection !== null) return Promise.resolve(cachedDetection)
 
   return new Promise((resolve) => {
-    execFile("which", ["tokscale"], { timeout: 5000 }, (error) => {
+    execFile("tokscale", ["--version"], { timeout: 5000 }, (error, stdout) => {
       if (error) {
         cachedDetection = false
         resolve(false)
         return
       }
       cachedDetection = true
-      execFile("tokscale", ["--version"], { timeout: 5000 }, (_err, stdout) => {
-        cachedVersion = parseVersion(String(stdout ?? ""))
-        resolve(true)
-      })
+      cachedVersion = parseVersion(String(stdout ?? ""))
+      resolve(true)
     })
   })
 }
@@ -87,9 +85,12 @@ export function fetchPeriodStats(
 export function parseModelReport(stdout: string): ModelReportJson {
   if (!stdout) throw new Error("Empty output from tokscale CLI")
 
+  const jsonStart = stdout.indexOf("{")
+  if (jsonStart === -1) throw new Error(`Invalid JSON from tokscale CLI: ${stdout.slice(0, 100)}`)
+
   let parsed: unknown
   try {
-    parsed = JSON.parse(stdout)
+    parsed = JSON.parse(stdout.slice(jsonStart))
   } catch {
     throw new Error(`Invalid JSON from tokscale CLI: ${stdout.slice(0, 100)}`)
   }

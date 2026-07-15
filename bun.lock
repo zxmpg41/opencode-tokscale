@@ -12,7 +12,13 @@
       },
       "peerDependencies": {
         "@opencode-ai/plugin": "^1.4.3",
+        "@opentui/core": "*",
+        "@opentui/solid": "*",
       },
+      "optionalPeers": [
+        "@opentui/core",
+        "@opentui/solid",
+      ],
     },
   },
   "packages": {

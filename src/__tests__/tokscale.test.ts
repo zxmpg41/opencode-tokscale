@@ -50,22 +50,12 @@ function mockExecFileError(error: Error & { code?: number }) {
 }
 
 /**
- * Mock detectTokscale's two-step sequence:
- * 1st call: `which tokscale` → success
- * 2nd call: `tokscale --version` → returns versionStdout
+ * Mock detectTokscale's version probe.
  */
 function mockDetectSequence(versionStdout: string) {
-  let callCount = 0
   mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
-    callCount++
     const callback = typeof _opts === "function" ? _opts : cb
-    if (callCount === 1) {
-      // which tokscale → success
-      ;(callback as Function)(null, "/usr/local/bin/tokscale", "")
-    } else if (callCount === 2) {
-      // tokscale --version → return version
-      ;(callback as Function)(null, versionStdout, "")
-    }
+    ;(callback as Function)(null, versionStdout, "")
     return {} as ReturnType<typeof execFile>
   })
 }
@@ -125,16 +115,8 @@ describe("detectTokscale", () => {
     const result = await detectTokscale()
     expect(result).toBe(true)
     expect(getVersion()).toEqual([4, 0, 5])
-    expect(mockExecFile).toHaveBeenCalledTimes(2)
-    expect(mockExecFile).toHaveBeenNthCalledWith(
-      1,
-      "which",
-      ["tokscale"],
-      expect.objectContaining({ timeout: 5000 }),
-      expect.any(Function),
-    )
-    expect(mockExecFile).toHaveBeenNthCalledWith(
-      2,
+    expect(mockExecFile).toHaveBeenCalledTimes(1)
+    expect(mockExecFile).toHaveBeenCalledWith(
       "tokscale",
       ["--version"],
       expect.objectContaining({ timeout: 5000 }),
@@ -149,7 +131,7 @@ describe("detectTokscale", () => {
     expect(getVersion()).toEqual([3, 1, 3])
   })
 
-  it("returns false when which tokscale fails with exit code 1", async () => {
+  it("returns false when tokscale --version fails with exit code 1", async () => {
     const error = Object.assign(new Error("not found"), { code: 1 })
     mockExecFileError(error)
     const result = await detectTokscale()
@@ -157,25 +139,15 @@ describe("detectTokscale", () => {
     expect(getVersion()).toBeNull()
   })
 
-  it("returns false when which tokscale times out", async () => {
+  it("returns false when tokscale --version times out", async () => {
     const error = Object.assign(new Error("timeout"), { code: "ETIMEDOUT" as unknown as number })
     mockExecFileError(error)
     const result = await detectTokscale()
     expect(result).toBe(false)
   })
 
-  it("returns true with null version when --version fails", async () => {
-    let callCount = 0
-    mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
-      callCount++
-      const callback = typeof _opts === "function" ? _opts : cb
-      if (callCount === 1) {
-        ;(callback as Function)(null, "/usr/local/bin/tokscale", "")
-      } else {
-        ;(callback as Function)(new Error("version failed"), "", "")
-      }
-      return {} as ReturnType<typeof execFile>
-    })
+  it("returns true with null version when --version output is unparsable", async () => {
+    mockDetectSequence("not a version")
     const result = await detectTokscale()
     expect(result).toBe(true)
     expect(getVersion()).toBeNull()
@@ -296,6 +268,11 @@ describe("parseModelReport", () => {
 
   it("throws error for invalid JSON", () => {
     expect(() => parseModelReport("{invalid}")).toThrow()
+  })
+
+  it("parses JSON when warnings are printed before the report", () => {
+    const result = parseModelReport(`tokscale: warning: cache could not be saved\n${validReportJson}`)
+    expect(result).toEqual(validReport)
   })
 
   it("throws error for valid JSON missing totalInput", () => {

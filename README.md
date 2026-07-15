@@ -15,7 +15,7 @@ Paste this into your LLM agent (Claude Code, opencode, Cursor, etc.):
 
 ```
 Install and configure opencode-tokscale by following the instructions here:
-https://raw.githubusercontent.com/stevejkang/opencode-tokscale/refs/heads/main/docs/installation.md
+https://raw.githubusercontent.com/zxmpg41/opencode-tokscale/refs/heads/main/docs/installation.md
 ```
 
 ### Prerequisites
@@ -111,7 +111,7 @@ Register the local path:
 ## Development
 
 ```bash
-git clone https://github.com/stevejkang/opencode-tokscale.git
+git clone https://github.com/zxmpg41/opencode-tokscale.git
 cd opencode-tokscale
 bun install
 ```
